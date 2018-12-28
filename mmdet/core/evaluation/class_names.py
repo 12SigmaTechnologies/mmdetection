@@ -78,11 +78,19 @@ def coco_classes():
     ]
 
 
+def liver_classes():
+    return [
+        'lesion', 'liver', 'body'
+    ]
+
+
 dataset_aliases = {
     'voc': ['voc', 'pascal_voc', 'voc07', 'voc12'],
     'imagenet_det': ['det', 'imagenet_det', 'ilsvrc_det'],
     'imagenet_vid': ['vid', 'imagenet_vid', 'ilsvrc_vid'],
-    'coco': ['coco', 'mscoco', 'ms_coco']
+    'coco': ['coco', 'mscoco', 'ms_coco'],
+    'liver': ['liver']
+
 }
 
 
