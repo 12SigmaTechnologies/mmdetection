@@ -7,7 +7,7 @@ from .base import BaseDetector
 from .test_mixins import RPNTestMixin
 from .. import builder
 from ..registry import DETECTORS
-from mmdet.core import (assign_and_sample, bbox2roi, bbox2result, multi_apply,
+from mmdet.core import (assign_and_sample, bbox2roi, bbox_dilation, bbox2result, multi_apply,
                         merge_aug_masks)
 
 
@@ -259,6 +259,9 @@ class CascadeRCNN(BaseDetector, RPNTestMixin):
             scale_factor,
             rescale=rescale,
             cfg=rcnn_test_cfg)
+        if len(img_meta) > 0 and 'bbox_dilate_ratio' in self.test_cfg.rcnn:
+            det_bboxes = bbox_dilation(det_bboxes, img_meta[0]['ori_shape'][0:2],
+                                       self.test_cfg.rcnn['bbox_dilate_ratio'])
         bbox_result = bbox2result(det_bboxes, det_labels,
                                   self.bbox_head[-1].num_classes)
         ms_bbox_result['ensemble'] = bbox_result

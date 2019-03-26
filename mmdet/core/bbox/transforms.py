@@ -102,6 +102,30 @@ def bbox_mapping_back(bboxes, img_shape, scale_factor, flip):
     new_bboxes = new_bboxes / scale_factor
     return new_bboxes
 
+def bbox_dilation(bboxes, image_size, dilate_ratio):
+    """Convert a list of bboxes to roi format.
+
+    Args:
+        Tensor: shape (n, 4) or (n, 5), [x1, y1, x2, y2, ...]
+
+    Returns:
+        Tensor: dilated bboxes shape (n, 4) or (n, 5), [x1, y1, x2, y2, ...]
+    """
+
+    colume_num = bboxes.size(1)
+    if bboxes.size(0)>0:
+        bboxes_size = bboxes[:, 2:4] - bboxes[:, :2]
+        bboxes_center = (bboxes[:, 2:4] + bboxes[:, :2])/2
+        new_bboxes_size = bboxes_size * dilate_ratio
+        new_left = bboxes_center-new_bboxes_size/2
+        new_right = bboxes_center+new_bboxes_size/2
+        new_left = torch.max(new_left, torch.tensor([0, 0], dtype=new_left.dtype).cuda())
+        new_right = torch.min(new_right, torch.tensor(np.array(image_size)-1, dtype=new_right.dtype).cuda())
+        new_bboxes = torch.cat([new_left, new_right, bboxes[:, 4:]], dim=-1)
+    else:
+        new_bboxes = bboxes.new_zeros((0, colume_num))
+
+    return new_bboxes
 
 def bbox2roi(bbox_list):
     """Convert a list of bboxes to roi format.

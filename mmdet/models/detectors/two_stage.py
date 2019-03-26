@@ -5,7 +5,7 @@ from .base import BaseDetector
 from .test_mixins import RPNTestMixin, BBoxTestMixin, MaskTestMixin
 from .. import builder
 from ..registry import DETECTORS
-from mmdet.core import bbox2roi, bbox2result, build_assigner, build_sampler
+from mmdet.core import bbox2roi, bbox2result, bbox_dilation, build_assigner, build_sampler
 
 
 @DETECTORS.register_module
@@ -163,6 +163,8 @@ class TwoStageDetector(BaseDetector, RPNTestMixin, BBoxTestMixin,
 
         det_bboxes, det_labels = self.simple_test_bboxes(
             x, img_meta, proposal_list, self.test_cfg.rcnn, rescale=rescale)
+        if len(img_meta)>0 and 'bbox_dilate_ratio' in self.test_cfg.rcnn:
+            det_bboxes = bbox_dilation(det_bboxes, img_meta[0]['ori_shape'][0:2], self.test_cfg.rcnn['bbox_dilate_ratio'])
         bbox_results = bbox2result(det_bboxes, det_labels,
                                    self.bbox_head.num_classes)
 
