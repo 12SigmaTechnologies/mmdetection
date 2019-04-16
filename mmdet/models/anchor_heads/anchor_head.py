@@ -128,12 +128,8 @@ class AnchorHead(nn.Module):
     def loss_single(self, cls_score, bbox_pred, labels, label_weights,
                     bbox_targets, bbox_weights, num_total_samples, cfg):
         # classification loss
-        if self.use_sigmoid_cls:
-            labels = labels.reshape(-1, self.cls_out_channels)
-            label_weights = label_weights.reshape(-1, self.cls_out_channels)
-        else:
-            labels = labels.reshape(-1)
-            label_weights = label_weights.reshape(-1)
+        labels = labels.reshape(-1)
+        label_weights = label_weights.reshape(-1)
         cls_score = cls_score.permute(0, 2, 3, 1).reshape(
             -1, self.cls_out_channels)
         if self.use_sigmoid_cls:
@@ -169,8 +165,14 @@ class AnchorHead(nn.Module):
             avg_factor=num_total_samples)
         return loss_cls, loss_reg
 
-    def loss(self, cls_scores, bbox_preds, gt_bboxes, gt_labels, img_metas,
-             cfg):
+    def loss(self,
+             cls_scores,
+             bbox_preds,
+             gt_bboxes,
+             gt_labels,
+             img_metas,
+             cfg,
+             gt_bboxes_ignore=None):
         featmap_sizes = [featmap.size()[-2:] for featmap in cls_scores]
         assert len(featmap_sizes) == len(self.anchor_generators)
 
@@ -186,6 +188,7 @@ class AnchorHead(nn.Module):
             self.target_means,
             self.target_stds,
             cfg,
+            gt_bboxes_ignore_list=gt_bboxes_ignore,
             gt_labels_list=gt_labels,
             label_channels=label_channels,
             sampling=sampling)
