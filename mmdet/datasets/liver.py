@@ -11,7 +11,8 @@ from .med_img_aug import MedImgAugmentation
 
 class LiverDataset(CustomDataset):
 
-    CLASSES = ('lesion', 'liver', 'body')
+    #CLASSES = ('lesion', 'liver', 'body')
+    CLASSES = ('lung', 'body')
 
     def __init__(self,
                  ann_file,
