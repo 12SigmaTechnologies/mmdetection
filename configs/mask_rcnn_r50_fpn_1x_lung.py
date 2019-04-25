@@ -100,7 +100,7 @@ test_cfg = dict(
         mask_thr_binary=0.5))
 # dataset settings
 dataset_type = 'CocoDataset'
-data_root = 'data/coco/'
+data_root = '/mnt/Data03/User/weiwei/lung_segments_classification/mmdetection/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 data = dict(
@@ -108,8 +108,8 @@ data = dict(
     workers_per_gpu=2,
     train=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_train2017.json',
-        img_prefix=data_root + 'train2017/',
+        ann_file=data_root + '/annotations/lr_lung_masktrain_dilation_0.json',
+        img_prefix=data_root + '/train/image/',
         img_scale=(1333, 800),
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
@@ -119,8 +119,8 @@ data = dict(
         with_label=True),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
+        ann_file=data_root + '/annotations/lr_lung_masktrain_dilation_0.json',
+        img_prefix=data_root + '/train/image/',
         img_scale=(1333, 800),
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
@@ -130,8 +130,8 @@ data = dict(
         with_label=True),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
+        ann_file=data_root + '/annotations/lr_lung_masktrain_dilation_0.json',
+        img_prefix=data_root + '/train/image/',
         img_scale=(1333, 800),
         img_norm_cfg=img_norm_cfg,
         size_divisor=32,
@@ -159,10 +159,10 @@ log_config = dict(
     ])
 # yapf:enable
 # runtime settings
-total_epochs = 12
+total_epochs = 5
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = '/mnt/Data03/User/weiwei/lung_segments_classification/mmdetection'
+work_dir = '/mnt/Data03/User/weiwei/lung_segments_classification/mmdetection/model/'
 load_from = None
 resume_from = None
 workflow = [('train', 1)]
