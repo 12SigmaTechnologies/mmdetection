@@ -1,7 +1,12 @@
 import numpy as np
 from externals.batchgenerators.batchgenerators.transforms.spatial_transforms import SpatialTransform
+from externals.batchgenerators.batchgenerators.transforms.spatial_transforms import ResizeTransform
 from externals.batchgenerators.batchgenerators.transforms.noise_transforms import GaussianNoiseTransform
 from externals.batchgenerators.batchgenerators.transforms.crop_and_pad_transforms import CenterCropSegTransform
+from externals.batchgenerators.batchgenerators.transforms.color_transforms import ContrastAugmentationTransform
+from externals.batchgenerators.batchgenerators.transforms.color_transforms import BrightnessMultiplicativeTransform
+
+
 import matplotlib.pyplot as plt
 
 def bbox2(img):
@@ -17,10 +22,16 @@ def bbox2(img):
 
 class MedImgAugmentation(object):
 
-    def __init__(self, spatial_config=None, crop_config=None, noise_config=None):
+    def __init__(self, resize_config=None, spatial_config=None, contrast_config=None, brightness_config=None, crop_config=None, noise_config=None):
         self.transforms = []
+        if resize_config is not None:
+            self.transforms.append(ResizeTransform(**resize_config))
         if spatial_config is not None:
             self.transforms.append(SpatialTransform(**spatial_config))
+        if contrast_config is not None:
+            self.transforms.append(ContrastAugmentationTransform(**contrast_config))
+        if brightness_config is not None:
+            self.transforms.append(BrightnessMultiplicativeTransform(**brightness_config))
         if crop_config is not None:
             self.transforms.append(CenterCropSegTransform(**crop_config))
         if noise_config is not None:
@@ -33,9 +44,10 @@ class MedImgAugmentation(object):
         if show:
             plt.figure(1)
             plt.subplot(221)
-            plt.imshow(img[:, :, 2:5]/255)
+            plt.imshow(img[:, :, :]/255)
             plt.subplot(222)
             plt.imshow(mask[0, :, :])
+
         img = np.expand_dims(np.transpose(img, (2, 0, 1)), 0)
         mask = np.expand_dims(mask, 0)
         data_dict = {"data": img, "seg": mask}
@@ -50,9 +62,10 @@ class MedImgAugmentation(object):
             cur_new_box = bbox2(cur_mask)
             new_boxes_list.append(cur_new_box)
         new_boxes = np.array(new_boxes_list, dtype=np.float32)
+
         if show:
             plt.subplot(223)
-            plt.imshow(new_img[:, :, 2:5]/255)
+            plt.imshow(new_img[:, :, :]/255)
             plt.subplot(224)
             plt.imshow(new_mask[0, :, :])
             plt.show()
