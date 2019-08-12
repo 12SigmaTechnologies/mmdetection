@@ -1,13 +1,13 @@
 import numpy as np
 from pycocotools.coco import COCO
-
 from .custom import CustomDataset
 import os.path as osp
-
 import mmcv
 from mmcv.parallel import DataContainer as DC
 from .utils import to_tensor, random_scale
 from .med_img_aug import MedImgAugmentation
+
+import matplotlib.pyplot as plt
 
 class LiverDataset(CustomDataset):
 
@@ -29,20 +29,20 @@ class LiverDataset(CustomDataset):
                  extra_med_aug=None,
                  resize_keep_ratio=True,
                  test_mode=False):
-        super().__init__(ann_file,
-                         img_prefix,
-                         img_scale,
-                         img_norm_cfg,
-                         size_divisor,
-                         proposal_file,
-                         num_max_proposals,
-                         flip_ratio,
-                         with_mask,
-                         with_crowd,
-                         with_label,
-                         extra_aug,
-                         resize_keep_ratio,
-                         test_mode)
+        super().__init__(ann_file=ann_file,
+                         img_prefix=img_prefix,
+                         img_scale=img_scale,
+                         img_norm_cfg=img_norm_cfg,
+                         size_divisor=size_divisor,
+                         proposal_file=proposal_file,
+                         num_max_proposals=num_max_proposals,
+                         flip_ratio=flip_ratio,
+                         with_mask=with_mask,
+                         with_crowd=with_crowd,
+                         with_label=with_label,
+                         extra_aug=extra_aug,
+                         resize_keep_ratio=resize_keep_ratio,
+                         test_mode=test_mode)
         self.extra_med_aug = None
         if extra_med_aug is not None:
             self.extra_med_aug = MedImgAugmentation(**extra_med_aug)
@@ -143,7 +143,7 @@ class LiverDataset(CustomDataset):
             ann['poly_lens'] = gt_poly_lens
         return ann
 
-    def prepare_train_img(self, idx):
+    def prepare_train_img(self, idx, show=False):
         img_info = self.img_infos[idx]
         # load image
         img_full_path = osp.join(self.img_prefix, img_info['filename'])
@@ -181,18 +181,29 @@ class LiverDataset(CustomDataset):
         if len(gt_bboxes) == 0:
             return None
 
+        img, gt_masks = self.pad_img_mask(img, gt_masks)
+
         # extra augmentation
-        if self.extra_aug is not None:
-            img, gt_bboxes, gt_labels = self.extra_aug(img, gt_bboxes,
-                                                       gt_labels)
+        if self.extra_aug is not None:                   # Not Used
+            img, gt_bboxes, gt_labels = self.extra_aug(img, gt_bboxes, gt_labels)
         # extra augmentation for medical images
         if self.extra_med_aug is not None:
             img, gt_masks, gt_bboxes = self.extra_med_aug(img, gt_masks, gt_bboxes)
+
+        if show:
+            plt.figure(1)
+            plt.subplot(121)
+            plt.imshow(img[:, :, :]/255)
+            plt.subplot(122)
+            plt.imshow(gt_masks[0, :, :])
+            plt.show()
+
         # apply transforms
-        flip = True if np.random.rand() < self.flip_ratio else False
-        img_scale = random_scale(self.img_scales)  # sample a scale
+        flip = False
+        img_scale = self.img_scales[0]            #random_scale(self.img_scales)  # sample a scale
         img, img_shape, pad_shape, scale_factor = self.img_transform(
-            img, img_scale, flip, keep_ratio=self.resize_keep_ratio)
+            img, img_scale, flip, keep_ratio=self.resize_keep_ratio)         # img_shape ((1024, 1024, 3)) pad_shape ((1024, 1024, 3)  scale_factor(1.0)
+
         img = img.copy()
         if self.proposals is not None:
             proposals = self.bbox_transform(proposals, img_shape, scale_factor,
@@ -205,8 +216,7 @@ class LiverDataset(CustomDataset):
             gt_bboxes_ignore = self.bbox_transform(gt_bboxes_ignore, img_shape,
                                                    scale_factor, flip)
         if self.with_mask:
-            gt_masks = self.mask_transform(ann['masks'], pad_shape,
-                                           scale_factor, flip)
+            gt_masks = self.mask_transform(gt_masks, pad_shape, scale_factor, flip)
 
         ori_shape = (img_info['height'], img_info['width'], 3)
         img_meta = dict(
@@ -228,6 +238,16 @@ class LiverDataset(CustomDataset):
             data['gt_bboxes_ignore'] = DC(to_tensor(gt_bboxes_ignore))
         if self.with_mask:
             data['gt_masks'] = DC(gt_masks, cpu_only=True)
+
+        img_plot = np.transpose(img, (1, 2, 0))
+        if show:
+            plt.figure(2)
+            plt.subplot(121)
+            plt.imshow(img_plot[:, :, :])
+            plt.subplot(122)
+            plt.imshow(gt_masks[0, :, :])
+            plt.show()
+
         return data
 
     def prepare_test_img(self, idx):
@@ -292,3 +312,26 @@ class LiverDataset(CustomDataset):
         if self.proposals is not None:
             data['proposals'] = proposals
         return data
+
+    def pad_img_mask(self, img, mask):
+        (w, h) = (img.shape[0], img.shape[1])
+        if w == h:
+            return img, mask
+        elif w > h:
+            new_img = np.zeros(shape=(w,w,3), dtype=np.uint8)
+            new_img[0: w, 0: h, :] = img
+            new_mask = []
+            for i in range(len(mask)):
+                curr_mask = np.zeros(shape=(w,w), dtype=np.uint8)
+                curr_mask[0: w, 0: h] = mask[i]
+                new_mask.append(curr_mask)
+        elif w < h:
+            new_img = np.zeros(shape=(h,h,3), dtype=np.uint8)
+            new_img[0: w, 0: h, :] = img
+            new_mask = []
+            for i in range(len(mask)):
+                curr_mask = np.zeros(shape=(h,h), dtype=np.uint8)
+                curr_mask[0: w, 0: h] = mask[i]
+                new_mask.append(curr_mask)
+
+        return new_img, new_mask
