@@ -77,6 +77,15 @@ def mask_cross_entropy(pred, target, label):
         pred_slice, target, reduction='mean')[None]
 
 
+def mask_volume_loss(pred, target, label):
+    num_rois = pred.size()[0]
+    inds = torch.arange(0, num_rois, dtype=torch.long, device=pred.device)
+    pred_slice = pred[inds, label].squeeze(1)
+    pred_slice = pred_slice.sigmoid()
+    print("Pred: %.3f and Targ: %.3f." % (pred_slice.mean(), target.mean()))
+    return F.mse_loss(pred_slice.mean(), target.mean())
+
+
 def smooth_l1_loss(pred, target, beta=1.0, reduction='mean'):
     assert beta > 0
     assert pred.size() == target.size() and target.numel() > 0
